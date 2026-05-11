@@ -6,6 +6,7 @@ import android.os.Looper
 import com.bouyahyaa.payment.models.CompatibilityReport
 import com.bouyahyaa.payment.models.MdmConfig
 import com.bouyahyaa.payment.models.PaymentError
+import com.bouyahyaa.payment.models.ProxyAction
 import com.bouyahyaa.payment.models.TerminalOrientation
 import com.bouyahyaa.payment.ui.SdkProxyActivity
 
@@ -33,12 +34,12 @@ class ConfigManager internal constructor() {
                 )
             )
         }
-        SdkProxyActivity.launch(context)
+        SdkProxyActivity.launch(context, ProxyAction.CONFIGURING_TERMINAL)
     }
 
     fun showSettings(context: Context) {
         SdkProxyActivity.pendingCallback = { _, _ -> /* Do nothing */ }
-        SdkProxyActivity.launch(context)
+        SdkProxyActivity.launch(context, ProxyAction.CONFIGURING_TERMINAL)
     }
 
     fun getUsabilityReport(callback: (CompatibilityReport) -> Unit) {
@@ -67,7 +68,7 @@ class ConfigManager internal constructor() {
         callback: (Boolean) -> Unit
     ) {
         SdkProxyActivity.pendingCallback = { isSuccess, _ -> callback(isSuccess) }
-        SdkProxyActivity.launch(context)
+        SdkProxyActivity.launch(context, ProxyAction.CONFIGURING_TERMINAL)
     }
 
     // --- Administration & Recovery ---

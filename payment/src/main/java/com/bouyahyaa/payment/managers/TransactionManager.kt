@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import com.bouyahyaa.payment.models.PaginatedHistory
 import com.bouyahyaa.payment.models.PaymentError
+import com.bouyahyaa.payment.models.ProxyAction
 import com.bouyahyaa.payment.models.TransactionFilter
 import com.bouyahyaa.payment.models.TransactionRecord
 import com.bouyahyaa.payment.models.TransactionResult
@@ -24,7 +25,6 @@ class TransactionManager internal constructor() {
             return
         }
 
-        // Simulating the Rubean Tap-to-Pay UI
         SdkProxyActivity.pendingCallback = { isSuccess, error ->
             if (isSuccess) {
                 onSuccess(
@@ -48,7 +48,7 @@ class TransactionManager internal constructor() {
                 onError(error ?: PaymentError.Unknown("PAYMENT_FAILED", "Transaction failed"))
             }
         }
-        SdkProxyActivity.launch(context)
+        SdkProxyActivity.launch(context, ProxyAction.WAITING_FOR_CARD)
     }
 
     fun refundPayment(
@@ -58,7 +58,6 @@ class TransactionManager internal constructor() {
         onSuccess: (TransactionResult) -> Unit,
         onError: (PaymentError) -> Unit
     ) {
-        // Simulating the Rubean Refund UI
         SdkProxyActivity.pendingCallback = { isSuccess, error ->
             if (isSuccess) {
                 onSuccess(
@@ -72,7 +71,7 @@ class TransactionManager internal constructor() {
                 onError(error ?: PaymentError.Unknown("REFUND_FAILED", "Refund failed"))
             }
         }
-        SdkProxyActivity.launch(context)
+        SdkProxyActivity.launch(context, ProxyAction.PROCESSING_REFUND)
     }
 
     fun voidTransaction(
@@ -81,7 +80,6 @@ class TransactionManager internal constructor() {
         onSuccess: (TransactionResult) -> Unit,
         onError: (PaymentError) -> Unit
     ) {
-        // Simulating the CCV eu.ccv.payment.action.SHOW_PAYMENT Intent UI
         SdkProxyActivity.pendingCallback = { isSuccess, error ->
             if (isSuccess) {
                 onSuccess(
@@ -94,7 +92,7 @@ class TransactionManager internal constructor() {
                 onError(error ?: PaymentError.Unknown("VOID_FAILED", "Void failed"))
             }
         }
-        SdkProxyActivity.launch(context)
+        SdkProxyActivity.launch(context, ProxyAction.VOIDING_TRANSACTION)
     }
 
     fun getTransactionHistory(
@@ -105,7 +103,7 @@ class TransactionManager internal constructor() {
         onSuccess: (PaginatedHistory) -> Unit,
         onError: (PaymentError) -> Unit
     ) {
-        // Mocking Rubean's TransactionHistoryApi with pagination
+        // Mocking Rubean's TransactionHistoryApi with pagination (no UI required)
         Handler(Looper.getMainLooper()).postDelayed({
             val mockList = listOf(
                 TransactionRecord(
@@ -123,7 +121,7 @@ class TransactionManager internal constructor() {
                 PaginatedHistory(
                     transactions = mockList,
                     pageNumber = page,
-                    numberOfPages = 1 // Mocking a single page of results
+                    numberOfPages = 1
                 )
             )
         }, 1000)
