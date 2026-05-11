@@ -4,17 +4,16 @@ import android.content.Context
 import android.content.Intent
 import android.nfc.NfcAdapter
 import android.nfc.Tag
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -114,10 +113,45 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
         super.onResume()
         // Start listening for physical NFC cards when the activity is visible
         if (currentAction == ProxyAction.WAITING_FOR_CARD && nfcAdapter != null) {
+
+            // CRITICAL FIX: You MUST include FLAG_READER_NO_PLATFORM_SOUNDS.
+            // This prevents the Android OS from stealing the card tap and freezing your dialog!
             val flags = NfcAdapter.FLAG_READER_NFC_A or
                     NfcAdapter.FLAG_READER_NFC_B or
-                    NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                    NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
+                    NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
+
             nfcAdapter?.enableReaderMode(this, this, flags, null)
+        }
+    }
+
+    /**
+     * Triggered by Android hardware when a REAL card or phone is tapped!
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onTagDiscovered(tag: Tag?) {
+        if (isTaskCompleted) return
+
+        // 1. Play our own vibration so you know the hardware read the card successfully
+        try {
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            vibrator.vibrate(
+                android.os.VibrationEffect.createOneShot(
+                    100,
+                    android.os.VibrationEffect.DEFAULT_AMPLITUDE
+                )
+            )
+        } catch (e: Exception) {
+            android.util.Log.w(
+                "SdkProxyActivity",
+                "Missing vibrate permission, skipping vibration."
+            )
+        }
+
+        // 2. We MUST run the finish logic on the Main UI Thread
+        runOnUiThread {
+            // Close the dialog and trigger the success callback in the host app!
+            finishWithResult(true, null)
         }
     }
 
@@ -126,22 +160,6 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
         // Stop listening for NFC when the activity goes into the background
         if (currentAction == ProxyAction.WAITING_FOR_CARD && nfcAdapter != null) {
             nfcAdapter?.disableReaderMode(this)
-        }
-    }
-
-    /**
-     * This is triggered by Android hardware when a REAL card or phone is tapped!
-     */
-    override fun onTagDiscovered(tag: Tag?) {
-        if (isTaskCompleted) return
-
-        // Optional: Vibrate the phone slightly to give physical feedback of the tap
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-
-        // Complete the mock transaction successfully!
-        runOnUiThread {
-            finishWithResult(true, null)
         }
     }
 
