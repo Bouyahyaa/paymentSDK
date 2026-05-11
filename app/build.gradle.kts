@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.rs2.rs2sdk"
+    namespace = "com.bouyahyaa.paymentsdk"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.rs2.rs2sdk"
+        applicationId = "com.bouyahyaa.paymentsdk"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

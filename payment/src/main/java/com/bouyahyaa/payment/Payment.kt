@@ -1,4 +1,4 @@
-package com.rs2.payment
+package com.bouyahyaa.payment
 
 import android.util.Log
 

@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RS2SDK"
+rootProject.name = "PaymentSDK"
 include(":app")
 include(":payment")

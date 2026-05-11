@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.rs2.payment"
+    namespace = "com.bouyahyaa.payment"
     compileSdk {
         version = release(36)
     }
