@@ -20,6 +20,12 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
     private lateinit var currentAction: ProxyAction
     private var isTaskCompleted = false
 
+    private val cardTapActions = listOf(
+        ProxyAction.WAITING_FOR_CARD,
+        ProxyAction.PROCESSING_REFUND,
+        ProxyAction.VOIDING_TRANSACTION
+    )
+
     companion object {
         private const val EXTRA_ACTION = "EXTRA_ACTION"
         var pendingCallback: ((Boolean, PaymentError?) -> Unit)? = null
@@ -38,22 +44,17 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
 
         val actionString = intent.getStringExtra(EXTRA_ACTION)
 
+        // Safely parse the action. If it fails, return an error to the host app!
         val parsedAction = runCatching { ProxyAction.valueOf(actionString ?: "") }.getOrNull()
-
         if (parsedAction == null) {
             finishWithResult(
                 false,
-                PaymentError.Unknown(
-                    "INVALID_ACTION",
-                    "Proxy launched without a valid action."
-                )
+                PaymentError.Unknown("INVALID_ACTION", "Proxy launched without a valid action.")
             )
             return
         }
 
-        // 3. Assign it safely
         currentAction = parsedAction
-
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
         setContent {
@@ -67,9 +68,7 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
             }
         }
 
-        // Only auto-finish if it's a generic loading action.
-        // We DO NOT auto-finish for settings (user must click close) or waiting for card (physical tap).
-        if (currentAction != ProxyAction.WAITING_FOR_CARD && currentAction != ProxyAction.SHOWING_SETTINGS) {
+        if (currentAction != ProxyAction.SHOWING_SETTINGS && currentAction !in cardTapActions) {
             Handler(Looper.getMainLooper()).postDelayed({
                 finishWithResult(true, null)
             }, 1500L)
@@ -78,7 +77,7 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
 
     override fun onResume() {
         super.onResume()
-        if (currentAction == ProxyAction.WAITING_FOR_CARD && nfcAdapter != null) {
+        if (currentAction in cardTapActions && nfcAdapter != null) {
             val flags = NfcAdapter.FLAG_READER_NFC_A or
                     NfcAdapter.FLAG_READER_NFC_B or
                     NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
@@ -93,7 +92,7 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
         if (isTaskCompleted) return
 
         try {
-            val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
             vibrator.vibrate(
                 android.os.VibrationEffect.createOneShot(
                     100,
@@ -101,20 +100,22 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
                 )
             )
         } catch (e: Exception) {
-            e.printStackTrace()
             android.util.Log.w(
                 "SdkProxyActivity",
                 "Missing vibrate permission, skipping vibration."
             )
         }
 
-        runOnUiThread { finishWithResult(true, null) }
+        runOnUiThread {
+            finishWithResult(true, null)
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        if (currentAction == ProxyAction.WAITING_FOR_CARD && nfcAdapter != null)
+        if (currentAction in cardTapActions && nfcAdapter != null) {
             nfcAdapter?.disableReaderMode(this)
+        }
     }
 
     private fun finishWithResult(isSuccess: Boolean, error: PaymentError?) {
