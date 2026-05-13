@@ -106,7 +106,6 @@ fun PaymentScreen(action: ProxyAction, amount: Double, onCancel: () -> Unit) {
                     fontSize = 24.sp,
                     color = Color.Black
                 )
-                // Formats amount with comma e.g., "EUR 100,00"
                 Text(
                     text = String.format(Locale.GERMANY, "EUR %.2f", amount),
                     fontSize = 24.sp,
@@ -189,7 +188,6 @@ fun PaymentScreen(action: ProxyAction, amount: Double, onCancel: () -> Unit) {
     }
 }
 
-// A simple Canvas to draw an oval to represent the contactless area
 @Composable
 fun MockContactlessGraphic() {
     Canvas(modifier = Modifier.size(280.dp, 160.dp)) {
@@ -198,7 +196,6 @@ fun MockContactlessGraphic() {
             style = Stroke(width = 8f),
             cornerRadius = CornerRadius(200f, 200f)
         )
-        // Draw some mock NFC waves inside
         drawArc(
             color = Color.Black,
             startAngle = -45f,

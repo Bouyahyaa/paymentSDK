@@ -11,8 +11,17 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.bouyahyaa.payment.models.PaymentError
 import com.bouyahyaa.payment.models.ProxyAction
+
+enum class PaymentUiState {
+    WAITING_FOR_TAP,
+    SHOWING_BRAND,
+    SHOWING_SUCCESS
+}
 
 internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
 
@@ -20,6 +29,8 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
     private lateinit var currentAction: ProxyAction
     private var transactionAmount: Double = 0.0
     private var isTaskCompleted = false
+
+    private var paymentUiState by mutableStateOf(PaymentUiState.WAITING_FOR_TAP)
 
     private val cardTapActions = listOf(
         ProxyAction.WAITING_FOR_CARD,
@@ -67,11 +78,20 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
                 }
 
                 in cardTapActions -> {
-                    PaymentScreen(
-                        action = currentAction,
-                        amount = transactionAmount,
-                        onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
-                    )
+                    when (paymentUiState) {
+                        PaymentUiState.WAITING_FOR_TAP -> {
+                            PaymentScreen(
+                                action = currentAction,
+                                amount = transactionAmount,
+                                onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
+                            )
+                        }
+
+                        PaymentUiState.SHOWING_BRAND -> CardSchemeAnimationScreen()
+
+
+                        PaymentUiState.SHOWING_SUCCESS -> PaymentSuccessScreen()
+                    }
                 }
 
                 else -> {
@@ -121,8 +141,20 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
             )
         }
 
+        // Trigger the screen sequence instead of finishing immediately!
         runOnUiThread {
-            finishWithResult(true, null)
+            paymentUiState = PaymentUiState.SHOWING_BRAND
+
+            // Show brand for 1.5 seconds, then show success screen
+            Handler(Looper.getMainLooper()).postDelayed({
+                paymentUiState = PaymentUiState.SHOWING_SUCCESS
+
+                // Show success screen for 1.5 seconds, then dismiss
+                Handler(Looper.getMainLooper()).postDelayed({
+                    finishWithResult(true, null)
+                }, 1500L)
+
+            }, 1500L)
         }
     }
 
