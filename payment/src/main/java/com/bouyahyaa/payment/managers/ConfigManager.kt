@@ -39,7 +39,7 @@ class ConfigManager internal constructor() {
 
     fun showSettings(context: Context) {
         SdkProxyActivity.pendingCallback = { _, _ -> /* Do nothing */ }
-        SdkProxyActivity.launch(context, ProxyAction.CONFIGURING_TERMINAL)
+        SdkProxyActivity.launch(context, ProxyAction.SHOWING_SETTINGS)
     }
 
     fun getUsabilityReport(callback: (CompatibilityReport) -> Unit) {
