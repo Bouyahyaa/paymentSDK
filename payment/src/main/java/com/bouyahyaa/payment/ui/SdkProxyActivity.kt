@@ -74,13 +74,19 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
 
         setContent {
             when (currentAction) {
-                ProxyAction.SHOWING_SETTINGS -> {
-                    SettingsScreen(onClose = { finishWithResult(true, null) })
-                }
+                ProxyAction.SHOWING_SETTINGS -> SettingsScreen(onClose = {
+                    finishWithResult(
+                        true,
+                        null
+                    )
+                })
 
-                in cardTapActions -> {
+                ProxyAction.CONFIGURING_TERMINAL -> PersonalisingScreen()
+
+
+                in cardTapActions ->
                     when (paymentUiState) {
-                        PaymentUiState.WAITING_FOR_TAP -> {
+                        PaymentUiState.WAITING_FOR_TAP ->
                             PaymentScreen(
                                 action = currentAction,
                                 amount = transactionAmount,
@@ -91,20 +97,18 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
                                     }, 1500L)
                                 }
                             )
-                        }
 
                         PaymentUiState.SHOWING_BRAND -> CardSchemeAnimationScreen()
                         PaymentUiState.SHOWING_SUCCESS -> PaymentSuccessScreen()
                         PaymentUiState.SHOWING_ABORTED -> PaymentAbortedScreen()
                     }
-                }
 
-                else -> {
+
+                else ->
                     LoadingDialogScreen(
                         action = currentAction,
                         onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
                     )
-                }
             }
         }
 
