@@ -5,6 +5,5 @@ enum class ProxyAction {
     WAITING_FOR_CARD,
     PROCESSING_REFUND,
     VOIDING_TRANSACTION,
-
     SHOWING_SETTINGS
 }
