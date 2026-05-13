@@ -20,7 +20,8 @@ import com.bouyahyaa.payment.models.ProxyAction
 enum class PaymentUiState {
     WAITING_FOR_TAP,
     SHOWING_BRAND,
-    SHOWING_SUCCESS
+    SHOWING_SUCCESS,
+    SHOWING_ABORTED
 }
 
 internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
@@ -83,14 +84,18 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
                             PaymentScreen(
                                 action = currentAction,
                                 amount = transactionAmount,
-                                onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
+                                onCancel = {
+                                    paymentUiState = PaymentUiState.SHOWING_ABORTED
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        finishWithResult(false, PaymentError.UserCancelled())
+                                    }, 1500L)
+                                }
                             )
                         }
 
                         PaymentUiState.SHOWING_BRAND -> CardSchemeAnimationScreen()
-
-
                         PaymentUiState.SHOWING_SUCCESS -> PaymentSuccessScreen()
+                        PaymentUiState.SHOWING_ABORTED -> PaymentAbortedScreen()
                     }
                 }
 
