@@ -23,4 +23,19 @@ object PaymentSDK {
         isInitialized = true
         Log.d(TAG, "Environment initialized successfully.")
     }
+
+    /**
+     * Cleans up SDK resources, unbinds background services, and prevents memory leaks.
+     * Host applications MUST call this in their onDestroy() method.
+     */
+    fun cleanup(context: Context) {
+        if (!isInitialized) return
+        Log.d(TAG, "Cleaning up SDK resources and unbinding services...")
+
+        // Example of how you will eventually unbind the real services:
+        // hardware.unbindTerminalHelper()
+        // transaction.disconnectCCVService()
+
+        isInitialized = false
+    }
 }
