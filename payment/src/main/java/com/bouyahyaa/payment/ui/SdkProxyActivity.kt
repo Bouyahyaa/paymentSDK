@@ -18,6 +18,7 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
 
     private var nfcAdapter: NfcAdapter? = null
     private lateinit var currentAction: ProxyAction
+    private var transactionAmount: Double = 0.0
     private var isTaskCompleted = false
 
     private val cardTapActions = listOf(
@@ -28,11 +29,13 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
 
     companion object {
         private const val EXTRA_ACTION = "EXTRA_ACTION"
+        private const val EXTRA_AMOUNT = "EXTRA_AMOUNT"
         var pendingCallback: ((Boolean, PaymentError?) -> Unit)? = null
 
-        fun launch(context: Context, action: ProxyAction) {
+        fun launch(context: Context, action: ProxyAction, amount: Double = 0.0) {
             val intent = Intent(context, SdkProxyActivity::class.java).apply {
                 putExtra(EXTRA_ACTION, action.name)
+                putExtra(EXTRA_AMOUNT, amount)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -43,8 +46,8 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
         super.onCreate(savedInstanceState)
 
         val actionString = intent.getStringExtra(EXTRA_ACTION)
+        transactionAmount = intent.getDoubleExtra(EXTRA_AMOUNT, 0.0)
 
-        // Safely parse the action. If it fails, return an error to the host app!
         val parsedAction = runCatching { ProxyAction.valueOf(actionString ?: "") }.getOrNull()
         if (parsedAction == null) {
             finishWithResult(
@@ -58,13 +61,25 @@ internal class SdkProxyActivity : ComponentActivity(), NfcAdapter.ReaderCallback
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
         setContent {
-            if (currentAction == ProxyAction.SHOWING_SETTINGS) {
-                SettingsScreen(onClose = { finishWithResult(true, null) })
-            } else {
-                LoadingDialogScreen(
-                    action = currentAction,
-                    onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
-                )
+            when (currentAction) {
+                ProxyAction.SHOWING_SETTINGS -> {
+                    SettingsScreen(onClose = { finishWithResult(true, null) })
+                }
+
+                in cardTapActions -> {
+                    PaymentScreen(
+                        action = currentAction,
+                        amount = transactionAmount,
+                        onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
+                    )
+                }
+
+                else -> {
+                    LoadingDialogScreen(
+                        action = currentAction,
+                        onCancel = { finishWithResult(false, PaymentError.UserCancelled()) }
+                    )
+                }
             }
         }
 
